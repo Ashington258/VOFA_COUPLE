@@ -121,7 +121,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     # 串口设置：配置串口号和波特率
-    serial_port = "COM7"  # 请根据实际情况更改为您的串口名称
+    serial_port = "COM32"  # 请根据实际情况更改为您的串口名称
     baudrate = 115200
 
     # 创建 CH100Device 实例
