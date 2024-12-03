@@ -1,19 +1,49 @@
-from udp_handler import udp_send_vofa_stream
+import time
+from .config import load_config
+from .data_generator import generate_data
+from .data_builder import build_float_matrix, build_vofa_stream
+from .udp_sender import send_udp_data
 
 
 def main():
-    config = {
-        "ip": "127.0.0.1",
-        "port": 5000,
-        "channel_count": 4,
-        "func_type": "sin",
-        "interval": 0.1,
-        "data_source": "generated",
-        "serial_port": "/dev/ttyUSB0",
-        "udp_host": "127.0.0.1",
-        "udp_port": 5001,
-    }
-    udp_send_vofa_stream(config)
+    """
+    主程序入口
+    """
+    # 1. 初始化：加载配置
+    config = load_config("config.json")
+
+    # 提取配置参数
+    ip = config["ip"]
+    port = config["port"]
+    channel_count = config["channel_count"]
+    func_type = config["func_type"]
+    interval = config["interval"]
+
+    t = 0.0  # 初始时间/相位
+
+    try:
+        print(f"开始发送 VOFA 数据到 {ip}:{port}...")
+        while True:
+            # 2. 获取数据（以生成数据为例）
+            data = generate_data(channel_count, func_type, t)
+
+            # 3. 构建浮点数矩阵
+            float_matrix = build_float_matrix(data)
+
+            # 4. 构建 VOFA 数据流
+            vofa_stream = build_vofa_stream(float_matrix)
+
+            # 5. 调用 UDP 发送
+            send_udp_data(ip, port, vofa_stream)
+
+            # 打印调试信息
+            print(f"已发送 VOFA 数据流: {vofa_stream.hex(' ')}")
+
+            # 增加时间并等待下一个间隔
+            t += interval
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        print("\n传输已停止。")
 
 
 if __name__ == "__main__":
