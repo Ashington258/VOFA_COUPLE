@@ -2,6 +2,7 @@ import struct
 import math
 import socket
 import time
+import serial
 import json
 
 
@@ -26,6 +27,55 @@ def generate_data(channel_count, func_type="sin", t=0.0):
             data.append(math.cos(i * t))
         else:
             raise ValueError("func_type must be 'sin' or 'cos'")
+    return data
+
+
+# 从串口获取数据
+def read_from_serial(port, baudrate=115200, channel_count=4):
+    """
+    Read data from a serial port and convert it to a float list.
+
+    Parameters:
+        port (str): Serial port name.
+        baudrate (int): Baud rate for serial communication.
+        channel_count (int): Number of channels to read from the serial port.
+
+    Returns:
+        list[float]: List of floating-point values read from the serial port.
+    """
+    ser = serial.Serial(port, baudrate, timeout=1)
+    data = []
+    for _ in range(channel_count):
+        byte_data = ser.read(4)  # Read 4 bytes for a single float
+        if len(byte_data) == 4:
+            value = struct.unpack("<f", byte_data)[0]  # Convert bytes to float
+            data.append(value)
+    ser.close()
+    return data
+
+
+# 从UDP服务器获取数据
+def read_from_udp(host, port, channel_count=4):
+    """
+    Read data from a UDP server.
+
+    Parameters:
+        host (str): UDP server host.
+        port (int): UDP server port.
+        channel_count (int): Number of channels to read from the UDP server.
+
+    Returns:
+        list[float]: List of floating-point values received from the UDP server.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((host, port))
+    data = []
+    while len(data) < channel_count:
+        message, _ = sock.recvfrom(1024)  # Receive message from UDP server
+        for i in range(0, len(message), 4):
+            value = struct.unpack("<f", message[i : i + 4])[0]
+            data.append(value)
+    sock.close()
     return data
 
 
@@ -72,12 +122,17 @@ def udp_send_vofa_stream(config):
             - 'channel_count' (int): Number of channels.
             - 'func_type' (str): 'sin' or 'cos'.
             - 'interval' (float): Time interval between transmissions (in seconds).
+            - 'data_source' (str): The source of the data ('generated', 'serial', 'udp').
+            - 'serial_port' (str): Serial port name (required if 'data_source' is 'serial').
+            - 'udp_host' (str): UDP host address (required if 'data_source' is 'udp').
+            - 'udp_port' (int): UDP host port (required if 'data_source' is 'udp').
     """
     ip = config["ip"]
     port = config["port"]
     channel_count = config["channel_count"]
     func_type = config["func_type"]
     interval = config["interval"]
+    data_source = config["data_source"]
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     t = 0.0  # Initial time/phase
@@ -85,8 +140,20 @@ def udp_send_vofa_stream(config):
     try:
         print(f"Sending VOFA data to {ip}:{port}...")
         while True:
-            # Generate data
-            data = generate_data(channel_count, func_type, t)
+            if data_source == "generated":
+                # Generate data
+                data = generate_data(channel_count, func_type, t)
+            elif data_source == "serial":
+                serial_port = config["serial_port"]
+                data = read_from_serial(serial_port, channel_count=channel_count)
+            elif data_source == "udp":
+                udp_host = config["udp_host"]
+                udp_port = config["udp_port"]
+                data = read_from_udp(udp_host, udp_port, channel_count=channel_count)
+            else:
+                raise ValueError(
+                    "Invalid data source. Choose 'generated', 'serial', or 'udp'."
+                )
 
             # Build float matrix and VOFA stream
             float_matrix = build_float_matrix(data)
@@ -116,6 +183,10 @@ if __name__ == "__main__":
         "channel_count": 4,
         "func_type": "sin",  # or "cos"
         "interval": 0.1,  # Seconds
+        "data_source": "generated",  # Options: 'generated', 'serial', 'udp'
+        "serial_port": "/dev/ttyUSB0",  # Used if data_source is 'serial'
+        "udp_host": "127.0.0.1",  # Used if data_source is 'udp'
+        "udp_port": 5001,  # Used if data_source is 'udp'
     }
 
     # 启动数据发送
