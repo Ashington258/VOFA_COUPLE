@@ -1,7 +1,7 @@
 import time
 from config import load_config
 from data_generator import generate_data
-from data_builder import build_float_matrix, build_vofa_stream
+from data_builder import build_vofa_stream
 from udp_sender import send_udp_data
 import sys
 import os
@@ -37,10 +37,10 @@ def main():
             data = generate_data(channel_count, func_type, t)
 
             # 3. 构建浮点数矩阵
-            float_matrix = build_float_matrix(data)
+            # float_matrix = build_float_matrix(data)
 
             # 4. 构建 VOFA 数据流
-            vofa_stream = build_vofa_stream(float_matrix)
+            vofa_stream = build_vofa_stream(data)
 
             # 5. 调用 UDP 发送
             send_udp_data(ip, port, vofa_stream)
