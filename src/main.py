@@ -1,8 +1,17 @@
 import time
-from .config import load_config
-from .data_generator import generate_data
-from .data_builder import build_float_matrix, build_vofa_stream
-from .udp_sender import send_udp_data
+from config import load_config
+from data_generator import generate_data
+from data_builder import build_float_matrix, build_vofa_stream
+from udp_sender import send_udp_data
+import sys
+import os
+
+# 获取当前工作目录
+current_directory = os.getcwd()
+
+# 将当前工作目录添加到 sys.path
+if current_directory not in sys.path:
+    sys.path.append(current_directory)
 
 
 def main():
@@ -10,7 +19,7 @@ def main():
     主程序入口
     """
     # 1. 初始化：加载配置
-    config = load_config("config.json")
+    config = load_config("src/config.json")
 
     # 提取配置参数
     ip = config["ip"]

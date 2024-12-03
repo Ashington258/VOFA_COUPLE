@@ -1,0 +1,7 @@
+{
+    "ip": "127.0.0.1",
+    "port": 5000,
+    "channel_count": 4,
+    "func_type": "sin",
+    "interval": 0.1
+}
