@@ -1,6 +1,7 @@
 import serial
 import struct
 import logging
+import time
 
 # 常量定义
 CHSYNC1 = 0x5A
@@ -113,3 +114,60 @@ class CH100Device:
             frames = self.parser.parse(data)
             return frames
         return []
+
+
+def main():
+    # 设置日志记录
+    logging.basicConfig(level=logging.INFO)
+
+    # 串口设置：配置串口号和波特率
+    serial_port = "COM7"  # 请根据实际情况更改为您的串口名称
+    baudrate = 115200
+
+    # 创建 CH100Device 实例
+    device = CH100Device(serial_port, baudrate)
+
+    # 打开串口
+    try:
+        device.open()
+        logging.info(f"成功打开串口 {serial_port}，波特率 {baudrate}")
+    except serial.SerialException as e:
+        logging.error(f"打开串口失败: {e}")
+        return
+
+    try:
+        while True:
+            # 读取并解析数据
+            frames = device.read_and_parse()
+
+            # 如果解析到数据帧
+            if frames:
+                for frame in frames:
+                    logging.info(f"接收到的帧数据: {frame}")
+                    # 可以根据需要进一步处理数据，例如提取温度、角度等信息
+                    temperature = frame.get("temperature", "N/A")
+                    roll = frame.get("roll", "N/A")
+                    pitch = frame.get("pitch", "N/A")
+                    yaw = frame.get("yaw", "N/A")
+
+                    # 打印解析出的重要数据
+                    logging.info(
+                        f"温度: {temperature}°C, Roll: {roll}, Pitch: {pitch}, Yaw: {yaw}"
+                    )
+            else:
+                logging.warning("未解析到有效数据帧")
+
+            # 延时 0.1 秒，模拟数据读取频率
+            time.sleep(0.1)
+
+    except KeyboardInterrupt:
+        logging.info("程序已停止")
+
+    finally:
+        # 关闭串口连接
+        device.close()
+        logging.info(f"串口 {serial_port} 已关闭")
+
+
+if __name__ == "__main__":
+    main()
