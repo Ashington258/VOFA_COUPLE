@@ -21,6 +21,12 @@ import api.ch100_protocol
 device = api.ch100_protocol.CH100Device("COM32", 115200)
 device.open()
 
+# TODO 更新功能
+# 1. 接收数据，对数据增加标签
+# 2. 增加的标签数据发送到zmq平台
+# 3. 根据标签需求从zmq拉取需要的数据
+# 4. 构建vofa 数据流
+
 
 def main():
     """
